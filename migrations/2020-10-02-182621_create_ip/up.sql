@@ -1,0 +1,4 @@
+CREATE TABLE ip (
+id INT PRIMARY KEY ,
+ip VARCHAR
+)
