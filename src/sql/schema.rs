@@ -11,12 +11,14 @@ table! {
     }
 }
 table! {
+    use diesel::sql_types::*;
+
     files (id) {
 	id -> Integer,
 	path -> Text,
 	filename -> Text,
-	chdate -> Timestamp,
-	synced -> bool,
-	deleted -> bool,
+//	chdate -> Datetime,
+	synced -> Bool,
+	deleted -> Bool,
     }
 }
