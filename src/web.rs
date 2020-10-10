@@ -2,7 +2,7 @@ use std::io::{stdout, Write};
 use dotenv::dotenv;
 use std::env;
 
-pub fn api(filename: String, folder: String) {
+pub fn api(filename: String, folder: &String) {
     dotenv().ok();
 
     use curl::easy::{Easy, Form};
@@ -15,7 +15,7 @@ pub fn api(filename: String, folder: String) {
 
     let path = env::var("FTP_UPLOAD_PATH").expect("FTP_UPLOAD_PATH not set");
     let fullpath = path + &filename;
-    let ppath = folder + &filename;
+    let ppath = folder.to_owned() + &filename;
     form.part("file").file(&fullpath).add().expect("error form");
     form.part("fullpath").contents(&ppath.as_bytes()).add().expect("error form");
     easy.httppost(form).unwrap();

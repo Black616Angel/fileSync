@@ -52,7 +52,7 @@ pub fn select_file(file: File) -> Result<File, String> {
 pub fn insert_files(files: Vec<N_File>) {
 	let conn = files_connection();
 	for file in files {
-		conn_insert_file(file, &conn);
+		conn_insert_file(&file, &conn);
 	}
 }
 
@@ -60,22 +60,22 @@ pub fn update_synced(id: i32, i_synced: bool) {
 	use self::schema::files::dsl::*;
 	let conn = files_connection();
 	let res = diesel::update(files.find(id))
-		.set(synced.eq(i_synced))
-		.expect("Error on update");
+		.set(synced.eq(i_synced));
+//		.expect("Error on update");
 }
 
-pub fn insert_file(file: N_File) {
+pub fn insert_file(file: &N_File) {
 	conn_insert_file(file, &files_connection());
 }
 
-fn conn_insert_file(file: N_File, conn: &MysqlConnection) {
+fn conn_insert_file(file: &N_File, conn: &MysqlConnection) {
 	use self::schema::files;
 	/*let i_file = N_File {
 		path: &file.path,
 		filename: &file.filename,
 	};*/
 	diesel::insert_into(files::table)
-		.values(&file)
+		.values(file)
 		.execute(conn)
 		.expect("error on insert");
 }

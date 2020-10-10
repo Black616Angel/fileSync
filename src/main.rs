@@ -21,21 +21,25 @@ fn main() {
 	let ftp_list = myftp::get_filelist(&mut ftp_stream);
 	for n_file in ftp_list {
 		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), synced: false, deleted: false, id: 0};
-		let sel_file = sql::select_file(file);
-		if sel_file.is_err() {
-			upload_file(n_file, ftp_stream, false, 0);
+		let res = sql::select_file(file);
+		if res.is_err() {
+			upload_file(n_file, &mut ftp_stream, false, 0);
 		}
-		else if sel_file.unwrap().synced == false {
-			upload_file(n_file, ftp_stream, true, sel_file.unwrap().id);
+		else {
+			let sel_file = res.unwrap();
+			if sel_file.synced == false {
+				upload_file(n_file, &mut ftp_stream, true, sel_file.id);
+			}
 		}
 	}
 	let _ = ftp_stream.quit();
 }
 
-fn upload_file(file: N_File, stream: FtpStream, update: bool, id: i32) {
+fn upload_file(i_file: N_File, mut stream: &mut FtpStream, update: bool, id: i32) {
 	//get data from ftp
-	myftp::get_file(file, &mut stream);
-	web::api(file.filename.to_string(), file.path.to_string());
+	let file = &i_file;
+	myftp::get_file(&file, &mut stream);
+	web::api(file.filename.to_string(), &file.path);
 	if update {
 		sql::update_synced( id, true);
 	} else {

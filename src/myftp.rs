@@ -2,14 +2,14 @@ use ftp::FtpStream;
 use crate::sql::models::*;
 use std::env;
 
-pub fn get_filelist<'i>(stream: &mut FtpStream) -> Vec<N_File<'i>> {
+pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<N_File> {
 	println!("get list");
 	let files = get_folder_list(&mut stream, &mut (&"/").to_string());
 	return files;
 }
 
-pub fn get_file(file: N_File, stream: &mut FtpStream) {
-	let fpath = file.path.to_owned() + file.filename;
+pub fn get_file(file: &N_File, mut stream: &mut FtpStream) {
+	let fpath = file.path.to_owned() + &file.filename;
 	let ftp_file = stream.simple_retr(&fpath).unwrap();
 }
 
@@ -21,7 +21,7 @@ pub fn get_stream (url:String) -> FtpStream {
 	return ftp_stream;
 }
 
-fn get_folder_list<'i>(stream: &mut FtpStream, path: &mut String) -> Vec<N_File<'i>> {
+fn get_folder_list(mut stream: &mut FtpStream, path: &mut String) -> Vec<N_File> {
 	let mut r_files =  Vec::<N_File>::new();
 	let filelist_str = stream.nlst(Some(&path)).unwrap();
 	println!("path: {:?}",path);
@@ -34,7 +34,7 @@ fn get_folder_list<'i>(stream: &mut FtpStream, path: &mut String) -> Vec<N_File<
 		}
 		let size = stream.size(&abs_path);
 		if size.is_ok() {
-			let new_file = N_File { path: &path.to_string(), filename: &line };
+			let new_file = N_File { path: path.to_string(), filename: line };
 			r_files.push(new_file);
 		} else {
 			if line != "." && line != ".." && line != ".trash" {
