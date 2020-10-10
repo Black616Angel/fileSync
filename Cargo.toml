@@ -14,7 +14,7 @@ libc = "0.2"
 ftp = { git = "https://github.com/Black616Angel/rust-ftp" }
 
 #for MySQL
-diesel = { version = "1.4.4", features = ["mysql", "chrono" ] }
+diesel = { version = "1.4.4", features = [ "chrono" ] }
 dotenv = "*"
 chrono = { version = "*", features = ["serde"] }
 

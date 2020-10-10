@@ -2,15 +2,23 @@ use ftp::FtpStream;
 use crate::sql::models::*;
 use std::env;
 
-pub fn get_filelist<'i>(ip: String, port: String) -> Vec<N_File<'i>> {
-
-	let url = ip.to_owned() + ":" + &port;
-	println!("get Stream");
-	let mut ftp_stream = get_stream(url);
+pub fn get_filelist<'i>(stream: &mut FtpStream) -> Vec<N_File<'i>> {
 	println!("get list");
-	let files = get_folder_list(&mut ftp_stream, &mut (&"/").to_string());
-	let _ = ftp_stream.quit();
+	let files = get_folder_list(&mut stream, &mut (&"/").to_string());
 	return files;
+}
+
+pub fn get_file(file: N_File, stream: &mut FtpStream) {
+	let fpath = file.path.to_owned() + file.filename;
+	let ftp_file = stream.simple_retr(&fpath).unwrap();
+}
+
+pub fn get_stream (url:String) -> FtpStream {
+	let mut ftp_stream = FtpStream::connect(url).unwrap();
+	let user = env::var("FTP_USER").expect("ftp-username not set");
+	let pass = env::var("FTP_PASS").expect("ftp-password not set");
+	ftp_stream.login(&user, &pass).unwrap();
+	return ftp_stream;
 }
 
 fn get_folder_list<'i>(stream: &mut FtpStream, path: &mut String) -> Vec<N_File<'i>> {
@@ -39,12 +47,4 @@ fn get_folder_list<'i>(stream: &mut FtpStream, path: &mut String) -> Vec<N_File<
 		}
 	}
 	return r_files.to_vec();
-}
-
-fn get_stream (url:String) -> FtpStream {
-	let mut ftp_stream = FtpStream::connect(url).unwrap();
-	let user = env::var("FTP_USER").expect("ftp-username not set");
-	let pass = env::var("FTP_PASS").expect("ftp-password not set");
-	ftp_stream.login(&user, &pass).unwrap();
-	return ftp_stream;
 }
