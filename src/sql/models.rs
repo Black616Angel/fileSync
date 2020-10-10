@@ -1,5 +1,7 @@
 //use std::time::SystemTime;
 //use chrono;
+//#[path="schema.rs"] mod schema;
+use super::schema::files;
 
 #[derive(Queryable)]
 pub struct Ip {
@@ -8,6 +10,7 @@ pub struct Ip {
 }
 
 #[derive(Queryable, Debug, Clone)]
+//#[table_name="files"]
 pub struct File {
     pub id: i32,
     pub path: String,
@@ -16,3 +19,11 @@ pub struct File {
     pub synced: bool,
     pub deleted: bool,
 }
+
+#[derive(Insertable, Clone)]
+#[table_name="files"]
+pub struct N_File<'i> {
+	pub path: &'i String,
+	pub filename: &'i String,
+}
+

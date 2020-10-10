@@ -2,7 +2,7 @@ use ftp::FtpStream;
 use crate::sql::models::*;
 use std::env;
 
-pub fn get_filelist(ip: String, port: String) -> Vec<File> {
+pub fn get_filelist<'i>(ip: String, port: String) -> Vec<N_File<'i>> {
 
 	let url = ip.to_owned() + ":" + &port;
 	println!("get Stream");
@@ -13,8 +13,8 @@ pub fn get_filelist(ip: String, port: String) -> Vec<File> {
 	return files;
 }
 
-fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<File> {
-	let mut r_files =  Vec::<File>::new();
+fn get_folder_list<'i>(stream: &mut FtpStream, path: &mut String) -> Vec<N_File<'i>> {
+	let mut r_files =  Vec::<N_File>::new();
 	let filelist_str = stream.nlst(Some(&path)).unwrap();
 	println!("path: {:?}",path);
 	for line in filelist_str {
@@ -26,7 +26,7 @@ fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<File> {
 		}
 		let size = stream.size(&abs_path);
 		if size.is_ok() {
-			let new_file = File { path: path.to_string(), filename: line, id: 0, synced: false, deleted:false }; //, chdate: dat };
+			let new_file = N_File { path: &path.to_string(), filename: &line };
 			r_files.push(new_file);
 		} else {
 			if line != "." && line != ".." && line != ".trash" {

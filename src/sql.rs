@@ -1,7 +1,8 @@
 use self::models::*;
 
-use diesel::prelude::*; use diesel::mysql::MysqlConnection; use 
-dotenv::dotenv;
+use diesel::prelude::*;
+use diesel::mysql::MysqlConnection;
+use dotenv::dotenv;
 use std::env;
 
 pub mod schema; pub mod models;
@@ -46,4 +47,26 @@ pub fn select_file(file: File) -> Result<File, String> {
 	return Ok(line);
 	}
 	return Err("not found".to_string());
+}
+
+pub fn insert_files(files: Vec<N_File>) {
+	let conn = files_connection();
+	for file in files {
+		conn_insert_file(file, &conn);
+	}
+}
+pub fn insert_file(file: N_File) {
+	conn_insert_file(file, &files_connection());
+}
+
+fn conn_insert_file(file: N_File, conn: &MysqlConnection) {
+	use self::schema::files;
+	/*let i_file = N_File {
+		path: &file.path,
+		filename: &file.filename,
+	};*/
+	diesel::insert_into(files::table)
+		.values(&file)
+		.execute(conn)
+		.expect("error on insert");
 }
