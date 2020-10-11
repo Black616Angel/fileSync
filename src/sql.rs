@@ -56,12 +56,13 @@ pub fn insert_files(files: Vec<N_File>) {
 	}
 }
 
-pub fn update_synced(id: i32, i_synced: bool) {
+pub fn update_synced(i_id: i32, i_synced: bool) {
 	use self::schema::files::dsl::*;
 	let conn = files_connection();
-	let res = diesel::update(files.find(id))
-		.set(synced.eq(i_synced));
-//		.expect("Error on update");
+	let _res = diesel::update(files.find(i_id))
+		.set(synced.eq(i_synced))
+		.execute(&conn)
+		.expect("Error on update");
 }
 
 pub fn insert_file(file: &N_File) {

@@ -1,6 +1,8 @@
 use ftp::FtpStream;
 use crate::sql::models::*;
 use std::env;
+use std::fs;
+use std::io::prelude::*;
 
 pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<N_File> {
 	println!("get list");
@@ -9,8 +11,19 @@ pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<N_File> {
 }
 
 pub fn get_file(file: &N_File, mut stream: &mut FtpStream) {
-	let fpath = file.path.to_owned() + &file.filename;
-	let ftp_file = stream.simple_retr(&fpath).unwrap();
+	let mut ftp_path: String;
+	if file.path != "/" {
+		ftp_path = file.path.to_owned() + "/" + &file.filename;
+	} else {
+		ftp_path = file.path.to_owned() + &file.filename;
+	}
+	let ftp_file = stream.simple_retr(&ftp_path).unwrap();
+	let path = env::var("FTP_UPLOAD_PATH").expect("FTP_UPLOAD_PATH not set");
+	let fullpath = path + &file.filename;
+	let mut file = fs::File::create(fullpath).expect("error creating file");
+	for line in ftp_file.into_inner() {
+		file.write_all(&[line]).expect("error writing file");
+	}
 }
 
 pub fn get_stream (url:String) -> FtpStream {

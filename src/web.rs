@@ -14,8 +14,20 @@ pub fn api(filename: String, folder: &String) {
     let mut form = Form::new();
 
     let path = env::var("FTP_UPLOAD_PATH").expect("FTP_UPLOAD_PATH not set");
-    let fullpath = path + &filename;
-    let ppath = folder.to_owned() + &filename;
+
+    let mut fullpath: String;
+    if path != "/" {
+        fullpath = path.to_owned() + "/" + &filename;
+    } else {
+        fullpath = path.to_owned() + &filename;
+    }
+
+    let mut ppath: String;
+    if folder != "/" {
+        ppath = folder.to_owned() + "/" + &filename;
+    } else {
+        ppath = folder.to_owned() + &filename;
+    }
     form.part("file").file(&fullpath).add().expect("error form");
     form.part("fullpath").contents(&ppath.as_bytes()).add().expect("error form");
     easy.httppost(form).unwrap();

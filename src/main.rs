@@ -18,6 +18,8 @@ fn main() {
 	let url = ftp_ip.to_owned() + ":" + &"21".to_string();
 	let mut ftp_stream = myftp::get_stream(url);
 	println!("get filelist");
+//	upload_file( N_File { path: "/Benni/Writer".to_string(), filename: "TRI.md".to_string() }, &mut ftp_stream, false, 0);
+
 	let ftp_list = myftp::get_filelist(&mut ftp_stream);
 	for n_file in ftp_list {
 		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), synced: false, deleted: false, id: 0};
@@ -45,4 +47,11 @@ fn upload_file(i_file: N_File, mut stream: &mut FtpStream, update: bool, id: i32
 	} else {
 		sql::insert_file( file );
 	}
+	delete_ftp_file(file);
+}
+
+fn delete_ftp_file(file: &N_File) {
+	use std::fs::remove_file;
+	let fpath = file.path.to_string() + &file.filename;
+	remove_file(fpath).unwrap();
 }
