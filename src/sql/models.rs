@@ -22,7 +22,7 @@ pub struct File {
 
 #[derive(Insertable, Clone)]
 #[table_name="files"]
-pub struct N_File {
+pub struct NFile {
 	pub path: String,
 	pub filename: String,
 }

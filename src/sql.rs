@@ -49,7 +49,7 @@ pub fn select_file(file: File) -> Result<File, String> {
 	return Err("not found".to_string());
 }
 
-pub fn insert_files(files: Vec<N_File>) {
+pub fn insert_files(files: Vec<NFile>) {
 	let conn = files_connection();
 	for file in files {
 		conn_insert_file(&file, &conn);
@@ -65,13 +65,13 @@ pub fn update_synced(i_id: i32, i_synced: bool) {
 		.expect("Error on update");
 }
 
-pub fn insert_file(file: &N_File) {
+pub fn insert_file(file: &NFile) {
 	conn_insert_file(file, &files_connection());
 }
 
-fn conn_insert_file(file: &N_File, conn: &MysqlConnection) {
+fn conn_insert_file(file: &NFile, conn: &MysqlConnection) {
 	use self::schema::files;
-	/*let i_file = N_File {
+	/*let i_file = NFile {
 		path: &file.path,
 		filename: &file.filename,
 	};*/

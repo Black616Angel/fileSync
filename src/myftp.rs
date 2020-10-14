@@ -4,26 +4,34 @@ use std::env;
 use std::fs;
 use std::io::prelude::*;
 
-pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<N_File> {
+pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<NFile> {
 	println!("get list");
-	let files = get_folder_list(&mut stream, &mut (&"/").to_string());
+	let mut dir: String = env::var("FTP_DIR").expect("FTP_DIR not set");
+	let files = get_folder_list(&mut stream, &mut dir);
 	return files;
 }
 
-pub fn get_file(file: &N_File, mut stream: &mut FtpStream) {
-	let mut ftp_path: String;
+pub fn get_file (file: &NFile, stream: &mut FtpStream) {
+	let ftp_path: String;
 	if file.path != "/" {
 		ftp_path = file.path.to_owned() + "/" + &file.filename;
 	} else {
 		ftp_path = file.path.to_owned() + &file.filename;
 	}
-	let ftp_file = stream.simple_retr(&ftp_path).unwrap();
 	let path = env::var("FTP_UPLOAD_PATH").expect("FTP_UPLOAD_PATH not set");
 	let fullpath = path + &file.filename;
-	let mut file = fs::File::create(fullpath).expect("error creating file");
+	let mut fs_file = fs::File::create(fullpath).expect("error creating file");
+/*	let ftp_file = stream.simple_retr(&ftp_path).unwrap();
 	for line in ftp_file.into_inner() {
 		file.write_all(&[line]).expect("error writing file");
-	}
+	}*/
+
+	stream.retr_with_file(&ftp_path, &mut fs_file, |stream, file| {
+		for byte in stream.bytes() {
+			file.write_all(&[byte.unwrap()]).unwrap();
+		}
+		Ok(())
+	}).expect("impossible");
 }
 
 pub fn get_stream (url:String) -> FtpStream {
@@ -34,8 +42,8 @@ pub fn get_stream (url:String) -> FtpStream {
 	return ftp_stream;
 }
 
-fn get_folder_list(mut stream: &mut FtpStream, path: &mut String) -> Vec<N_File> {
-	let mut r_files =  Vec::<N_File>::new();
+fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<NFile> {
+	let mut r_files =  Vec::<NFile>::new();
 	let filelist_str = stream.nlst(Some(&path)).unwrap();
 	println!("path: {:?}",path);
 	for line in filelist_str {
@@ -47,7 +55,7 @@ fn get_folder_list(mut stream: &mut FtpStream, path: &mut String) -> Vec<N_File>
 		}
 		let size = stream.size(&abs_path);
 		if size.is_ok() {
-			let new_file = N_File { path: path.to_string(), filename: line };
+			let new_file = NFile { path: path.to_string(), filename: line };
 			r_files.push(new_file);
 		} else {
 			if line != "." && line != ".." && line != ".trash" {
