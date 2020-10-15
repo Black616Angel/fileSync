@@ -27,3 +27,14 @@ pub struct NFile {
 	pub filename: String,
 }
 
+impl File {
+    pub fn to_nfile(self: File) -> NFile {
+        NFile { path : self.path, filename : self.filename}
+    }
+}
+
+impl NFile {
+    pub fn to_file(self: NFile) -> File {
+        File { path : self.path, filename : self.filename, synced: false, deleted: false, id: 0}
+    }
+}

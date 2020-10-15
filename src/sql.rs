@@ -40,13 +40,25 @@ fn ip_connection() -> MysqlConnection {
 pub fn select_file(file: File) -> Result<File, String> {
 	use self::schema::files::dsl::*;
 	let conn = files_connection();
-	let results = files.filter(path.eq(file.path)) // & filename.eq(file.filename))
+	let results = files.filter(path.eq(file.path).and(filename.eq(file.filename)))
 		.load::<File>(&conn)
 		.expect("load error");
 	for line in results {
-	return Ok(line);
+	    return Ok(line);
 	}
 	return Err("not found".to_string());
+}
+
+pub fn select_files_not_synced() -> Result<Vec<File>, String> {
+	use self::schema::files::dsl::*;
+	let conn = files_connection();
+	let results = files.filter(synced.eq(false))
+		.load::<File>(&conn)
+		.expect("load error");
+	if results.len() > 0 {
+        return Ok(results);
+    }
+	return Err("nothing found".to_string());
 }
 
 pub fn insert_files(files: Vec<NFile>) {

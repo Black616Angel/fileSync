@@ -17,3 +17,11 @@ chrono = { version = "*", features = ["serde"] }
 
 #for pCloud
 curl = "*"
+
+#for async
+futures = { version = "*" }
+tokio = {version = "*", features = ["full"] }
+threadpool = "*"
+
+#for output
+crossterm = "*"

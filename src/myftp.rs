@@ -3,6 +3,10 @@ use crate::sql::models::*;
 use std::env;
 use std::fs;
 use std::io::prelude::*;
+use std::io::{stdout, Write};
+use crossterm::{ExecutableCommand, cursor};
+
+use crate::web;
 
 pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<NFile> {
 	println!("get list");
@@ -21,11 +25,6 @@ pub fn get_file (file: &NFile, stream: &mut FtpStream) {
 	let path = env::var("FTP_UPLOAD_PATH").expect("FTP_UPLOAD_PATH not set");
 	let fullpath = path + &file.filename;
 	let mut fs_file = fs::File::create(fullpath).expect("error creating file");
-/*	let ftp_file = stream.simple_retr(&ftp_path).unwrap();
-	for line in ftp_file.into_inner() {
-		file.write_all(&[line]).expect("error writing file");
-	}*/
-
 	stream.retr_with_file(&ftp_path, &mut fs_file, |stream, file| {
 		for byte in stream.bytes() {
 			file.write_all(&[byte.unwrap()]).unwrap();
@@ -34,10 +33,12 @@ pub fn get_file (file: &NFile, stream: &mut FtpStream) {
 	}).expect("impossible");
 }
 
-pub fn get_stream (url:String) -> FtpStream {
+pub fn get_stream () -> FtpStream {
+	let ftp_url = web::get_url();
+	let url = ftp_url.to_owned() + ":" + &"21".to_string();
 	let mut ftp_stream = FtpStream::connect(url).unwrap();
-	let user = env::var("FTP_USER").expect("ftp-username not set");
-	let pass = env::var("FTP_PASS").expect("ftp-password not set");
+	let user = env::var("FTP_USER").expect("FTP_USER not set");
+	let pass = env::var("FTP_PASS").expect("FTP_PASS not set");
 	ftp_stream.login(&user, &pass).unwrap();
 	return ftp_stream;
 }
@@ -64,7 +65,8 @@ fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<NFile> {
 		}
 		let flen = r_files.len();
 		if flen != 0 && flen % 100 == 0 {
-			println!("read {} files",r_files.len());
+			print!("read {} files",r_files.len());
+			stdout().execute(cursor::MoveToColumn(0)).expect("");
 		}
 	}
 	return r_files.to_vec();
