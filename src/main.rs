@@ -32,8 +32,10 @@ static MAX_THREAD_COUNT: i32 = 5;
 async fn main() {
     dotenv().ok();
 
-	let not_synced = sql::select_files_not_synced();
-	let ten_millis = time::Duration::from_millis(10);
+    cleanup();
+
+    let ten_millis = time::Duration::from_millis(10);
+	/*let not_synced = sql::select_files_not_synced();
 	if not_synced.is_ok() {
 		let nsynced_files = not_synced.unwrap();
 		if nsynced_files.len() > 0 {
@@ -51,7 +53,7 @@ async fn main() {
 				tokio::spawn(upload_file(nsynced_file.to_nfile(), false, 0, t_num, first));
 			}
 		}
-	}
+	}*/
 
 	println!("get ftp stream");
 	let ignore_synced = env::var("IGNORE_SYNCED").is_ok();
@@ -63,12 +65,14 @@ async fn main() {
 	println!("upload {:?} files", ftp_list.len());
 	println!("");
 	let mut t_num = 0;
+    let mut id = 0;
 	let mut first = true;
 	for n_file in ftp_list {
+        id+=1;
 		while GLOBAL_THREAD_COUNT.load(Ordering::SeqCst) >= MAX_THREAD_COUNT.try_into().unwrap() {
 			thread::sleep(ten_millis);
 		}
-		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), synced: false, deleted: false, id: 0};
+		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), synced: false, deleted: false, id};
 		let res = sql::select_file(file);
 		if res.is_err() || ignore_synced {
 			t_num = t_num + 1;
@@ -105,7 +109,7 @@ async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32, imove: boo
 		stdout.execute(cursor::MoveToPreviousLine((MAX_THREAD_COUNT+1-tnum).try_into().unwrap())).expect("");
 		stdout.execute(Clear(ClearType::CurrentLine)).expect("");
 	}
-	println!("getting   file: {:?}", i_file.filename);
+	println!("getting   file {}: {:?}", id, i_file.filename);
 	stdout().execute(cursor::RestorePosition).expect("");
 	let mut stream = myftp::get_stream();
 	myftp::get_file(&i_file, &mut stream);
@@ -120,7 +124,7 @@ async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32, imove: boo
 		stdout.execute(cursor::MoveToPreviousLine((num-tnum).try_into().unwrap())).expect("");
 		stdout.execute(Clear(ClearType::CurrentLine)).expect("");
 	}
-	println!("uploading file: {:?}", i_file.filename);
+	println!("uploading file {}: {:?}", id, i_file.filename);
 	stdout().execute(cursor::RestorePosition).expect("");
 	if web::api(file.filename.to_string(), &file.path).is_err() {
 		println!("error uploading file: {:?}", i_file.path + "/" + &i_file.filename);
@@ -129,6 +133,15 @@ async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32, imove: boo
 	sql::update_synced( id, true);
 	delete_ftp_file(file);
 	GLOBAL_THREAD_COUNT.fetch_sub(1, Ordering::SeqCst);
+}
+
+fn cleanup() {
+    use std::fs;
+    let paths = fs::read_dir(env::var("FTP_UPLOAD_PATH").expect("FTP_UPLOAD_PATH not set")).unwrap();
+
+    for path in paths {
+	       fs::remove_file(path.unwrap().path()).unwrap();
+    }
 }
 
 fn delete_ftp_file(file: &NFile) {
