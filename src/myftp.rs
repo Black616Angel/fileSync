@@ -5,8 +5,10 @@ use std::fs;
 use std::io::prelude::*;
 use std::io::{stdout, Write};
 use crossterm::{ExecutableCommand, cursor};
+use std::convert::TryInto;
 
 use crate::web;
+use crate::output;
 
 pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<NFile> {
 	println!("get list");
@@ -15,7 +17,7 @@ pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<NFile> {
 	return files;
 }
 
-pub fn get_file (file: &NFile, stream: &mut FtpStream) {
+pub fn get_file (file: &NFile, stream: &mut FtpStream, outputline: &u16) {
 	let ftp_path: String;
 	if file.path != "/" {
 		ftp_path = file.path.to_owned() + "/" + &file.filename;
@@ -26,9 +28,27 @@ pub fn get_file (file: &NFile, stream: &mut FtpStream) {
 	let fullpath = path + &file.filename;
 	let mut fs_file = fs::File::create(fullpath).expect("error creating file");
 	stream.retr_with_file(&ftp_path, &mut fs_file, |stream, file| {
+		// let len = stream.bytes().count();
+		// let mut curr: usize = 0;
+		let mut curr = 0;
+		let reps = 500000;
+		let mut bufb: Vec<u8> = Vec::new();
 		for byte in stream.bytes() {
-			file.write_all(&[byte.unwrap()]).unwrap();
+			bufb.push(byte.unwrap());
+			curr = curr + 1;
+			if curr % reps == 0 {
+				let times = curr / reps;
+				let punkte = ".".repeat(times) + &" ".repeat(3-times);
+	            let text = format!("getting   file {}", punkte).to_string();
+				if curr == 3 * reps {
+					curr = 0;
+				}
+				file.write_all(&bufb[..]).unwrap();
+				bufb.clear();
+	            output::print_in_line(&text, outputline, false);
+			}
 		}
+		file.write_all(&bufb[..]).unwrap();
 		Ok(())
 	}).expect("impossible");
 }
@@ -56,8 +76,10 @@ fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<NFile> {
 		}
 		let size = stream.size(&abs_path);
 		if size.is_ok() {
-			let new_file = NFile { path: path.to_string(), filename: line };
-			r_files.push(new_file);
+			if size.unwrap() != 0.try_into().unwrap() {
+				let new_file = NFile { path: path.to_string(), filename: line };
+				r_files.push(new_file);
+			}
 		} else {
 			if line != "." && line != ".." && line != ".trash" {
 				r_files.extend(get_folder_list(stream, &mut abs_path));
@@ -70,4 +92,19 @@ fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<NFile> {
 		}
 	}
 	return r_files.to_vec();
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::myftp::*;
+    #[test]
+    fn ftp() {
+	    dotenv::dotenv().ok();
+		let path = env::var("TEST_FTP_PATH");
+		assert!(path.is_ok());
+		let file = env::var("TEST_FTP_FILE");
+		assert!(file.is_ok());
+		get_file(&NFile {path: path.unwrap(), filename: file.unwrap() }, &mut get_stream(), &1.try_into().unwrap());
+        //fs::remove_file(env::var("FTP_UPLOAD_PATH").expect("FTP_UPLOAD_PATH not set") + &env::var("TEST_FTP_FILE").unwrap()).unwrap();
+    }
 }

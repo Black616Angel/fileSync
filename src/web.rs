@@ -1,10 +1,13 @@
 // use std::io::{stdout, Write};
 use dotenv::dotenv;
+use std::convert::TryInto;
 use std::env;
 use curl::easy::{Easy, Form};
 use std::str;
 
-pub fn api(filename: String, folder: &String) -> Result<(),()> {
+use crate::output;
+
+pub fn api(filename: String, folder: &String, outputline: &u16) -> Result<(),String> {
     dotenv().ok();
 
 //    let mut dst = Vec::new();
@@ -32,6 +35,7 @@ pub fn api(filename: String, folder: &String) -> Result<(),()> {
     form.part("file").file(&fullpath).add().expect("error form");
     form.part("fullpath").contents(&ppath.as_bytes()).add().expect("error form");
     easy.httppost(form).unwrap();
+    easy.progress(true).unwrap();
     let mut dst = Vec::new();
     {
         let mut transfer = easy.transfer();
@@ -39,14 +43,31 @@ pub fn api(filename: String, folder: &String) -> Result<(),()> {
         dst.extend_from_slice(data);
         Ok(data.len())
         }).unwrap();
+        transfer.progress_function(|_,_,exp_upl,curr_upl| {
+            let hundred: f64 = 100.try_into().unwrap();
+            let proz = (hundred * curr_upl / exp_upl).round();
+            let len: usize;
+            if proz >= 10.try_into().unwrap() {
+                len = 2;
+            } else if proz == hundred {
+                len = 3;
+            } else {
+                len = 1;
+            }
+            let leerz = " ".repeat(len-3);
+            let text = format!("uploading file {}%{}", proz, leerz).to_string();
+            output::print_in_line(&text, outputline, false);
+            true
+        }).unwrap();
         transfer.perform().unwrap();
     }
 //    println!("{:?}",&dst);
-    if str::from_utf8(&dst).unwrap().to_string() == "Done." {
+    let answer = str::from_utf8(&dst).unwrap().to_string();
+    if answer == "Done." {
         return Ok(());
     }
     else {
-        return Err(());
+        return Err(answer);
     }
 }
 pub fn get_url() -> String {

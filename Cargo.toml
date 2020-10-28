@@ -21,7 +21,9 @@ curl = "*"
 #for async
 futures = { version = "*" }
 tokio = {version = "*", features = ["full"] }
-threadpool = "*"
+
+#threadpool = "*"
+lazy_static = "*"
 
 #for output
 crossterm = "*"
