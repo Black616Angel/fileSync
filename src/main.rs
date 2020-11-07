@@ -39,26 +39,6 @@ async fn main() {
     cleanup();
 
     let ten_millis = time::Duration::from_millis(10);
-	/*let not_synced = sql::select_files_not_synced();
-	if not_synced.is_ok() {
-		let nsynced_files = not_synced.unwrap();
-		if nsynced_files.len() > 0 {
-			let mut t_num = 0;
-			let mut first = true;
-			for nsynced_file in nsynced_files {
-				while GLOBAL_THREAD_COUNT.load(Ordering::SeqCst) >= MAX_THREAD_COUNT.try_into().unwrap() {
-					thread::sleep(ten_millis);
-				}
-				t_num = t_num + 1;
-				if t_num > MAX_THREAD_COUNT {
-					t_num = 0;
-					first = false;
-				}
-				tokio::spawn(upload_file(nsynced_file.to_nfile(), false, 0, t_num, first));
-			}
-		}
-	}*/
-
 	println!("get ftp stream");
 	let ignore_synced = env::var("IGNORE_SYNCED").is_ok();
 	let mut ftp_stream = myftp::get_stream();
@@ -73,6 +53,7 @@ async fn main() {
     for _ in 1..*MAX_THREAD_COUNT{
         println!();
     }
+	let print = false;
 	for n_file in ftp_list {
         id+=1;
 		while GLOBAL_THREAD_COUNT.load(Ordering::SeqCst) >= (*MAX_THREAD_COUNT).try_into().unwrap() {
@@ -81,11 +62,12 @@ async fn main() {
 		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), synced: false, deleted: false, id};
 		let res = sql::select_file(file);
 		if res.is_err() || ignore_synced {
+//			println!("{:?}: {:?}",GLOBAL_THREAD_COUNT.load(Ordering::SeqCst), (n_file.filename).to_string());
 			t_num = t_num + 1;
 			if t_num > *MAX_THREAD_COUNT {
 				t_num = 0;
 			}
-			tokio::spawn(upload_file(n_file, false, id, t_num));
+			tokio::spawn(upload_file(n_file, false, id, t_num, print));
 		}
 		else {
 			let sel_file = res.unwrap();
@@ -94,14 +76,14 @@ async fn main() {
 				if t_num > *MAX_THREAD_COUNT {
 					t_num = 0;
 				}
-				tokio::spawn(upload_file(n_file, true, sel_file.id, t_num));
+				tokio::spawn(upload_file(n_file, true, sel_file.id, t_num, print));
 			}
 		}
 	}
+	println!("Done!");
 }
 
-async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32) {
-	//get data from ftp
+async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32, print: bool) {
 	let file = &i_file;
 	if !update {
 		sql::insert_file( file );
@@ -109,13 +91,17 @@ async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32) {
     let lnum: u16 = (*MAX_THREAD_COUNT+1-tnum).try_into().unwrap();
 	GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
     let fnam: String = i_file.filename.chars().take(30).collect();
-	output::print_in_line(&format!("getting   file     {}: {:?}", id, fnam).to_string(), &lnum, true);
+//	if print {
+		output::print_in_line(&format!("getting   file      {}: {:?}", id, fnam).to_string(), &lnum, true);
+//	}
 
 	let mut stream = myftp::get_stream();
-	myftp::get_file(&i_file, &mut stream, &lnum);
-    output::print_in_line(&format!("uploading file     {}: {:?}", id, fnam).to_string(), &lnum, true);
-    let answer = web::api(file.filename.to_string(), &file.path, &lnum);
-	if answer.is_err() {
+	myftp::get_file(&i_file, &mut stream, &lnum, print);
+//	if print {
+		output::print_in_line(&format!("uploading file      {}: {:?}", id, fnam).to_string(), &lnum, true);
+//	}
+	let answer = web::api(file.filename.to_string(), &file.path, &lnum, print);
+	if answer.is_err() { //&& print {
 		output::print_in_line(&format!("error uploading file: {:?}", i_file.path + "/" + &fnam).to_string(), &lnum, true);
         output::print_log(format!("{:?}", answer.unwrap_err()).to_string());
     	GLOBAL_THREAD_COUNT.fetch_sub(1, Ordering::SeqCst);

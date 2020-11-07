@@ -1,6 +1,6 @@
 [package]
 name = "file_sync"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["black616angel"]
 edition = "2018"
 
@@ -8,12 +8,13 @@ edition = "2018"
 
 [dependencies]
 #for ftp
-ftp = { git = "https://github.com/Black616Angel/rust-ftp" }
+ftp = { path = "../rust-ftp" }
+#{ git = "https://github.com/Black616Angel/rust-ftp" }
 
 #for MySQL
 diesel = { version = "1.4.4", features = [ "mysql", "chrono" ] }
 dotenv = "*"
-chrono = { version = "*", features = ["serde"] }
+chrono = { version = "0.4.*", features = ["serde"] }
 
 #for pCloud
 curl = "*"

@@ -6,6 +6,7 @@ use std::io::prelude::*;
 use std::io::{stdout, Write};
 use crossterm::{ExecutableCommand, cursor};
 use std::convert::TryInto;
+use std::str::*;
 
 use crate::web;
 use crate::output;
@@ -17,7 +18,7 @@ pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<NFile> {
 	return files;
 }
 
-pub fn get_file (file: &NFile, stream: &mut FtpStream, outputline: &u16) {
+pub fn get_file (file: &NFile, stream: &mut FtpStream, outputline: &u16, print: bool) {
 	let ftp_path: String;
 	if file.path != "/" {
 		ftp_path = file.path.to_owned() + "/" + &file.filename;
@@ -39,13 +40,15 @@ pub fn get_file (file: &NFile, stream: &mut FtpStream, outputline: &u16) {
 			if curr % reps == 0 {
 				let times = curr / reps;
 				let punkte = ".".repeat(times) + &" ".repeat(3-times);
-	            let text = format!("getting   file {}", punkte).to_string();
+				let text = format!("getting   file {}", punkte).to_string();
 				if curr == 3 * reps {
 					curr = 0;
 				}
 				file.write_all(&bufb[..]).unwrap();
 				bufb.clear();
-	            output::print_in_line(&text, outputline, false);
+				if print {
+					output::print_in_line(&text, outputline, false);
+				}
 			}
 		}
 		file.write_all(&bufb[..]).unwrap();
@@ -74,11 +77,16 @@ fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<NFile> {
 		} else {
 			abs_path = path.to_owned() + &line;
 		}
+//		println!("{:?}", &line);
 		let size = stream.size(&abs_path);
 		if size.is_ok() {
-			if size.unwrap() != 0.try_into().unwrap() {
+			let fsize = size.unwrap();
+			let max_size: usize = usize::from_str(&env::var("MAX_SIZE").expect("MAX_SIZE not set")).unwrap();
+			if fsize != 0.try_into().unwrap() && fsize <= Some(max_size) {
 				let new_file = NFile { path: path.to_string(), filename: line };
 				r_files.push(new_file);
+			} else {
+				println!("file {:?} excluded. size: {:?}", &line, fsize);
 			}
 		} else {
 			if line != "." && line != ".." && line != ".trash" {
