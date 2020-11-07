@@ -7,7 +7,7 @@ use std::str;
 
 use crate::output;
 
-pub fn api(filename: String, folder: &String, outputline: &u16) -> Result<(),String> {
+pub fn api(filename: String, folder: &String, outputline: &u16, print: bool) -> Result<(),String> {
     dotenv().ok();
 
 //    let mut dst = Vec::new();
@@ -59,8 +59,14 @@ pub fn api(filename: String, folder: &String, outputline: &u16) -> Result<(),Str
             output::print_in_line(&text, outputline, false);
             true
         }).unwrap();
-        transfer.perform().unwrap();
-	output::print_in_line(&("uploading file done      ".to_string()), outputline, false);
+        let res = transfer.perform();
+	if print {
+		if res.is_ok() {
+			output::print_in_line(&("uploading file done      ".to_string()), outputline, false);
+		} else {
+			output::print_in_line(&("error uploading file     ".to_string()), outputline, false);
+		}
+	}
     }
 //    println!("{:?}",&dst);
     let answer = str::from_utf8(&dst).unwrap().to_string();
