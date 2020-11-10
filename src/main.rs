@@ -1,3 +1,4 @@
+
 #![allow(deprecated)]
 #[macro_use]
 extern crate diesel;
@@ -7,6 +8,7 @@ extern crate curl;
 extern crate crossterm;
 extern crate tokio;
 extern crate futures;
+extern crate serde;
 
 pub mod sql;
 pub mod myftp;
@@ -24,6 +26,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{thread, time};
 use lazy_static::lazy_static;
 
+use chrono::{Local, NaiveDateTime};
+
 static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
 lazy_static! {
     static ref MAX_THREAD_COUNT: i32 = {
@@ -39,6 +43,7 @@ async fn main() {
     cleanup();
 
     let ten_millis = time::Duration::from_millis(10);
+    let today: NaiveDateTime = Local::now().naive_local();
 	println!("get ftp stream");
 	let ignore_synced = env::var("IGNORE_SYNCED").is_ok();
 	let mut ftp_stream = myftp::get_stream();
@@ -53,36 +58,37 @@ async fn main() {
     for _ in 1..*MAX_THREAD_COUNT{
         println!();
     }
+	let print = false;
 	for n_file in ftp_list {
-        id+=1;
+		id+=1;
 		while GLOBAL_THREAD_COUNT.load(Ordering::SeqCst) >= (*MAX_THREAD_COUNT).try_into().unwrap() {
 			thread::sleep(ten_millis);
 		}
-		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), synced: false, deleted: false, id};
-		let res = sql::select_file(file);
+		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), chdate: today, synced: false, deleted: false, id};
+		let res = sql::select_file(file.clone());
 		if res.is_err() || ignore_synced {
 //			println!("{:?}: {:?}",GLOBAL_THREAD_COUNT.load(Ordering::SeqCst), (n_file.filename).to_string());
 			t_num = t_num + 1;
 			if t_num > *MAX_THREAD_COUNT {
 				t_num = 0;
 			}
-			tokio::spawn(upload_file(n_file, false, id, t_num));
+			tokio::spawn(upload_file(n_file, false, id, t_num, print));
 		}
 		else {
 			let sel_file = res.unwrap();
-			if sel_file.synced == false {
+			if sel_file.synced == false || sel_file.chdate.lt(&file.chdate){
 				t_num = t_num + 1;
 				if t_num > *MAX_THREAD_COUNT {
 					t_num = 0;
 				}
-				tokio::spawn(upload_file(n_file, true, sel_file.id, t_num));
+				tokio::spawn(upload_file(n_file, true, sel_file.id, t_num, print));
 			}
 		}
 	}
 	println!("Done!");
 }
 
-async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32) {
+async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32, print: bool) {
 	let file = &i_file;
 	if !update {
 		sql::insert_file( file );
@@ -90,13 +96,17 @@ async fn upload_file(i_file: NFile, update: bool, id: i32, tnum: i32) {
     let lnum: u16 = (*MAX_THREAD_COUNT+1-tnum).try_into().unwrap();
 	GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
     let fnam: String = i_file.filename.chars().take(30).collect();
-	output::print_in_line(&format!("getting   file     {}: {:?}", id, fnam).to_string(), &lnum, true);
+//	if print {
+		output::print_in_line(&format!("getting   file      {}: {:?}", id, fnam).to_string(), &lnum, true);
+//	}
 
 	let mut stream = myftp::get_stream();
-	myftp::get_file(&i_file, &mut stream, &lnum);
-    output::print_in_line(&format!("uploading file     {}: {:?}", id, fnam).to_string(), &lnum, true);
-    let answer = web::api(file.filename.to_string(), &file.path, &lnum);
-	if answer.is_err() {
+	myftp::get_file(&i_file, &mut stream, &lnum, print);
+//	if print {
+		output::print_in_line(&format!("uploading file      {}: {:?}", id, fnam).to_string(), &lnum, true);
+//	}
+	let answer = web::api(file.filename.to_string(), &file.path, &lnum, print);
+	if answer.is_err() { //&& print {
 		output::print_in_line(&format!("error uploading file: {:?}", i_file.path + "/" + &fnam).to_string(), &lnum, true);
         output::print_log(format!("{:?}", answer.unwrap_err()).to_string());
     	GLOBAL_THREAD_COUNT.fetch_sub(1, Ordering::SeqCst);

@@ -1,9 +1,8 @@
 //#[macro_use]
-//extern crate diesel;
+//use diesel::data_types::*;
+//use diesel::sql_types::*;
 
 table! {
-    use diesel::sql_types::*;
-
     ip (id) {
         id -> Integer,
 	#[sql_name = "ip"]
@@ -11,13 +10,11 @@ table! {
     }
 }
 table! {
-    use diesel::sql_types::*;
-
     files (id) {
 	id -> Integer,
 	path -> Text,
 	filename -> Text,
-//	chdate -> Datetime,
+	chdate -> Timestamp,
 	synced -> Bool,
 	deleted -> Bool,
     }
