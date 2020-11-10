@@ -9,6 +9,7 @@ use std::io::Write;
 use std::io::{stdout, Stdout};
 //use tokio::io::{stdout, Stdout};
 use std::sync::Mutex;
+use crate::crossterm::ExecutableCommand;
 
 // static GLOBAL_THREAD_LOCK: AtomicUsize = AtomicUsize::new(0);
 lazy_static! {
@@ -53,18 +54,8 @@ pub fn print_log(text: String) {
 
 fn go_to_line(sout: &mut Stdout, line: &u16, up: bool) {
 	if up {
-<<<<<<< HEAD
-		stdout().execute(cursor::MoveToPreviousLine(*line)).expect("");
-	} else
-	{
-		if stdout().execute(cursor::MoveToNextLine(*line)).is_err() {
+		sout.execute(cursor::MoveToPreviousLine(*line)).expect("");
+	} else if sout.execute(cursor::MoveToNextLine(*line)).is_err() {
             //we ignore that alltogether
-        }
-=======
-		sout.queue(cursor::MoveToPreviousLine(*line)).expect("");
-	} else 
-	{
-		sout.queue(cursor::MoveToNextLine(*line)).is_err();
->>>>>>> 637a536cdf4ae07c9a0d6cdb435e02439c0dceb4
-	}
+    }
 }
