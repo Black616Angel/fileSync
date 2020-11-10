@@ -53,16 +53,6 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9213f7cd7c27e95c2b57c49f0e69b1ea65b27138da84a170133fd21b07659c00"
-dependencies = [
- "num",
- "time",
-]
-
-[[package]]
-name = "chrono"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
@@ -146,7 +136,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e2de9deab977a153492a1468d1b1c0662c1cf39e5ea87d0c060ecd59ef18d8c"
 dependencies = [
  "byteorder",
- "chrono 0.4.19",
+ "chrono",
  "diesel_derives",
  "mysqlclient-sys",
  "url",
@@ -173,7 +163,7 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 name = "file_sync"
 version = "0.1.1"
 dependencies = [
- "chrono 0.4.19",
+ "chrono",
  "crossterm",
  "curl",
  "diesel",
@@ -181,6 +171,7 @@ dependencies = [
  "ftp",
  "futures",
  "lazy_static 0.1.16",
+ "serde",
  "tokio",
 ]
 
@@ -188,7 +179,7 @@ dependencies = [
 name = "ftp"
 version = "3.0.2"
 dependencies = [
- "chrono 0.2.25",
+ "chrono",
  "lazy_static 0.1.16",
  "regex",
 ]
@@ -439,34 +430,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "num"
-version = "0.1.42"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4703ad64153382334aa8db57c637364c322d3372e097840c72000dabdcf6156e"
-dependencies = [
- "num-integer",
- "num-iter",
- "num-traits",
-]
-
-[[package]]
 name = "num-integer"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2cc698a63b549a70bc047073d2949cce27cd1c7b0a4a862d08a8031bc2801db"
 dependencies = [
  "autocfg",
- "num-traits",
-]
-
-[[package]]
-name = "num-iter"
-version = "0.1.42"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2021c8337a54d21aca0d59a92577a029af9431cb59b909b03252b9c164fad59"
-dependencies = [
- "autocfg",
- "num-integer",
  "num-traits",
 ]
 
@@ -660,6 +629,20 @@ name = "serde"
 version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b88fa983de7720629c9387e9f517353ed404164b1e482c970a90c1a4aaf7dc1a"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.117"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbd1ae72adb44aab48f325a02444a5fc079349a8d804c1fc922aed3f7454c74e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "signal-hook"

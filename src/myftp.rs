@@ -7,6 +7,7 @@ use std::io::{stdout, Write};
 use crossterm::{ExecutableCommand, cursor};
 use std::convert::TryInto;
 use std::str::*;
+use chrono::{NaiveDateTime, Local};
 
 use crate::web;
 use crate::output;
@@ -82,8 +83,14 @@ fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<NFile> {
 		if size.is_ok() {
 			let fsize = size.unwrap();
 			let max_size: usize = usize::from_str(&env::var("MAX_SIZE").expect("MAX_SIZE not set")).unwrap();
+			let datopt = stream.mdtm(&abs_path).unwrap();
+			let dat: NaiveDateTime;
+			match datopt {
+				Some(dt) => dat = dt.naive_local(),
+				None 	 => dat = Local::now().naive_local(),
+			}
 			if fsize != 0.try_into().unwrap() && fsize <= Some(max_size) {
-				let new_file = NFile { path: path.to_string(), filename: line };
+				let new_file = NFile { path: path.to_string(), filename: line, chdate: dat};
 				r_files.push(new_file);
 			} else {
 				println!("file {:?} excluded. size: {:?}", &line, fsize);

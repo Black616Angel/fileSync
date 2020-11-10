@@ -15,6 +15,7 @@ ftp = { path = "../rust-ftp" }
 diesel = { version = "1.4.4", features = [ "mysql", "chrono" ] }
 dotenv = "*"
 chrono = { version = "0.4.*", features = ["serde"] }
+serde  = { version ="1.0", features = ["derive"] }
 
 #for pCloud
 curl = "*"
