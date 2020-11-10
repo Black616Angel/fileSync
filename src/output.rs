@@ -43,8 +43,10 @@ pub fn print_log(text: String) {
 fn go_to_line(line: &u16, up: bool) {
 	if up {
 		stdout().execute(cursor::MoveToPreviousLine(*line)).expect("");
-	} else 
+	} else
 	{
-		stdout().execute(cursor::MoveToNextLine(*line)).is_err();
+		if stdout().execute(cursor::MoveToNextLine(*line)).is_err() {
+            //we ignore that alltogether
+        }
 	}
 }
