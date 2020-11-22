@@ -8,8 +8,7 @@ edition = "2018"
 
 [dependencies]
 #for ftp
-ftp = { path = "../rust-ftp" }
-#{ git = "https://github.com/Black616Angel/rust-ftp" }
+ftp = { version="*",  git = "https://github.com/Black616Angel/rust-ftp" }
 
 #for MySQL
 diesel = { version = "1.4.4", features = [ "mysql", "chrono" ] }
