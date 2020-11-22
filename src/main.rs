@@ -1,4 +1,3 @@
-
 #![allow(deprecated)]
 #[macro_use]
 extern crate diesel;
@@ -76,7 +75,7 @@ async fn main() {
 		}
 		else {
 			let sel_file = res.unwrap();
-			if sel_file.synced == false || sel_file.chdate.lt(&file.chdate){
+			if sel_file.synced == false || sel_file.chdate.gt(&file.chdate){
 				t_num = t_num + 1;
 				if t_num > *MAX_THREAD_COUNT {
 					t_num = 0;
