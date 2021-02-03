@@ -49,6 +49,18 @@ pub fn select_file(file: File) -> Result<File, String> {
 	return Err("not found".to_string());
 }
 
+pub fn select_nfile(file: NFile) -> Result<File, String> {
+	use self::schema::files::dsl::*;
+	let conn = files_connection();
+	let results = files.filter(path.eq(file.path).and(filename.eq(file.filename)))
+		.load::<File>(&conn)
+		.expect("load error");
+	for line in results {
+	    return Ok(line);
+	}
+	return Err("not found".to_string());
+}
+
 pub fn select_files_not_synced() -> Result<Vec<File>, String> {
 	use self::schema::files::dsl::*;
 	let conn = files_connection();

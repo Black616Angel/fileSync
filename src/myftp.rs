@@ -11,6 +11,7 @@ use chrono::{NaiveDateTime, Local};
 
 use crate::web;
 use crate::output;
+use crate::sql;
 
 pub fn get_filelist(mut stream: &mut FtpStream) -> Vec<NFile> {
 	println!("get list");
@@ -90,8 +91,10 @@ fn get_folder_list(stream: &mut FtpStream, path: &mut String) -> Vec<NFile> {
 				None 	 => dat = Local::now().naive_local(),
 			}
 			if fsize != 0.try_into().unwrap() && fsize <= Some(max_size) {
-				let new_file = NFile { path: path.to_string(), filename: line, chdate: dat};
-				r_files.push(new_file);
+				let new_file = NFile { path: path.to_string(), filename: line, chdate: dat };
+				if sql::select_nfile(new_file.clone()).is_err() {
+					r_files.push(new_file);
+				}
 			} else {
 				println!("file {:?} excluded. size: {:?}", &line, fsize);
 			}

@@ -63,7 +63,7 @@ async fn main() {
 		while GLOBAL_THREAD_COUNT.load(Ordering::SeqCst) >= (*MAX_THREAD_COUNT).try_into().unwrap() {
 			thread::sleep(ten_millis);
 		}
-		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), chdate: today, synced: false, deleted: false, id};
+		let file = File { path: n_file.path.to_string(), filename: n_file.filename.to_string(), chdate: today, synced: false, deleted: false, id };
 		let res = sql::select_file(file.clone());
 		if res.is_err() || ignore_synced {
 //			println!("{:?}: {:?}",GLOBAL_THREAD_COUNT.load(Ordering::SeqCst), (n_file.filename).to_string());
